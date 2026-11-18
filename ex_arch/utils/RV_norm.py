@@ -5,25 +5,14 @@ from scipy.integrate import quad
 import math
 from torch.distributions import Normal
 
-"""
-默认采用 高斯分布
-各个随机变量之间独立同分布
-v : 随机变量
-miu : 数学期望
-sigma : 标准方差
-
-v ~ N(miu, sigma ** 2)
-
-随机变量 概率密度求解
-"""
 
 class GaussianDistribution:
-    # 默认是标准正态 (1-dim)
+
     def __init__(self, loc = 0., scale = 1.):
-        # 数学期望
+
         self.loc = loc
 
-        # 标准差
+
         self.scale = scale
 
         self.x = sympy.Symbol('x')
@@ -40,10 +29,8 @@ class GaussianDistribution:
     def var(self):
         return self.scale ** 2
 
-    # 符号计算较慢
-    # 不可广播
     def cdf(self, a, b):
-        # 位于区间[a, b]的概率
+
         low = min(a, b)
         upper = max(a, b)
 
@@ -57,15 +44,13 @@ class GaussianDistribution:
         p = (self.x - miu)**2 / (2 * sigma ** 2)
         return 1.0 / (sympy.sqrt(2 * np.pi) * sigma) * sympy.exp(-p)
 
-    # 其余相关积分计算
-    # ∫vp(v)dv 与 cdf 数学原理 相同 ([a,b]区间)
-    # 可广播
+
     def integrate_vMulpdf(self, a, b):
         expr = sympy.integrate(self.x * self.pdf, self.x)
         F = sympy.lambdify(self.x, expr, "numpy")
         return F(b) - F(a)
 
-    # 可广播
+
     def integrate_pdf(self, a, b):
         rv = norm(loc=self.loc, scale=self.scale)
         return rv.cdf(b) - rv.cdf(a)

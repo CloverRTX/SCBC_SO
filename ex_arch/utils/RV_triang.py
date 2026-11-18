@@ -13,12 +13,9 @@ class TriangularDistribution:
         a----c----b
 
     '''
-    # 三角分布
+
     def __init__(self, a = -0.5, b = 0.5, c = 0.):
-        # 默认的三角分布
-        # a 最小值
-        # b 最大值
-        # c 众数
+
         self.a = a
         self.b = b
         self.c = c
@@ -26,17 +23,15 @@ class TriangularDistribution:
         #                              loc=self.a, scale=self.b - self.a)
         self.triangular_dist = triang(c=(self.c - self.a) / (self.b - self.a),
                                       loc = self.a, scale=self.b - self.a)
-    # ∫p(v)dv
-    # 可以广播
+
+
     def cdf(self, a, b):
-        # 位于区间[a, b]的概率
+
         lower = a
         upper = b
         return self.triangular_dist.cdf(upper) - self.triangular_dist.cdf(lower)
 
-    # ∫vp(v)dv 与 cdf 数学原理 相同 ([a,b]区间)
-    # 无法广播 一循环方式进行
-    # 运算结果太慢
+
     def v_mul_px(self, a, b):
         def integrand(x):
             return x * self.triangular_dist.pdf(x)
@@ -44,13 +39,13 @@ class TriangularDistribution:
         for i in range(a.shape[0]):
             lower = a[i]
             upper = b[i]
-        # 位于区间[a, b]的数学期望
+
             exp, _ = quad(integrand, lower, upper)
             expectations.append(exp)
         return torch.tensor(expectations)
 
-    # 根据具体分布而来，不可泛用
-    # 优点是可以广播 且 计算速度很快
+
+
     def v_mul_px_plus(self, a, b):
         con1 = (a <= 0) & (b <= 0)
         con2 = (a < 0) & (b > 0)
@@ -75,7 +70,6 @@ if __name__ == "__main__":
     b[:, 0] = a
     b[:, 1] = a + 0.5
     print(b)
-    print("======================")
     r1 = rv.v_mul_px_plus(b[:,0], b[:,1])
     r2 = rv.cdf(b[:,0], b[:,1])
     print(r2)

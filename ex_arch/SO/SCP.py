@@ -2,7 +2,7 @@ import time
 
 from RL.Env import Zones
 from utils.RV_triang import TriangularDistribution
-import SO.WaitAndJudgeProbCalc as WAJProbCalc
+
 import numpy as np
 import sympy as sp
 import torch
@@ -34,7 +34,7 @@ class SCP_solver():
 
         self.d = len(self.SBC_model.parameters) + 3
 
-        # 各种超参数
+
         # ===========SCP_N_hat_N===========
         self.delta = config["SCP_N_hat_N"]["delta"]
         self.hat_M = None
@@ -71,7 +71,7 @@ class SCP_solver():
         print(f"(Regularization Coefficient) miu = {self.miu}")
 
 
-        # 采样场景
+
         scenario = self.ScenarioSampling(self.N, self.Big_D_zones)
 
         if plot:
@@ -103,39 +103,39 @@ class SCP_solver():
         #start = time.time()
         #matrix_g5 = self.g_5Matrix_opt(scenario)
         #end = time.time()
-        #print(f"计算g5约束矩阵运行时间: {end - start:.6f} 秒")
+
 
         start = time.time()
-        # 与g1的过滤规则相同
+
         scenario_g5 = self.filter_g1(scenario, self.X)
         matrix_g5 = self.g_5Matrix_opt_batch(scenario_g5)
         end = time.time()
-        print(f"计算g5约束矩阵运行时间: {end - start:.6f} 秒")
+
 
         start = time.time()
         Kappa1 = self.PAC_cvx_addLipCon_based_method1(matrix_g1, matrix_g2, matrix_g3, matrix_g5)
         end = time.time()
-        print(f"计算Kappa1的时间: {end - start:.6f} 秒")
+
 
         start = time.time()
         Kappa2 = self.PAC_cvx_addLipCon_based_method2(matrix_g1, matrix_g2, matrix_g3, matrix_g5)
         end = time.time()
-        print(f"计算Kappa2的时间: {end - start:.6f} 秒")
+
 
         start = time.time()
         Kappa3 = self.PAC_cvx_addLipCon_based_method3(matrix_g1, matrix_g2, matrix_g3, matrix_g5)
         end = time.time()
-        print(f"计算Kappa3的时间: {end - start:.6f} 秒")
+
 
 
         #================================================
         print("============After SO============")
 
-        # SCP_N_hat_N 的条件检查
+
         start = time.time()
         hat_M = self.calc_hat_M(scenario_g5)
         end = time.time()
-        print(f"估计hat_M运行时间: {end - start:.6f} 秒")
+
 
         beta_s = hat_M / (self.delta * self.delta * self.hat_N)
 
@@ -143,8 +143,8 @@ class SCP_solver():
         print(f"beta_s = {beta_s}")
 
 
-        # todo 优化下面的代码
-        # SCP_N 的条件检查
+
+
         #Lx1 = self.calcLip(scenario)
         Lx2 = self.calcLip2(self.Big_D_zones)
         Lx3 = self.calcLip3(self.Big_D_zones)
@@ -168,11 +168,7 @@ class SCP_solver():
 
 
     def func_G_inverse_epsilon(self, epsilon, area):
-        """
-        适用于超矩形上的均匀状态采样。
-        超矩形均匀分布对应的小球概率下界 G(r)的逆函数G^{-1}(epsilon)。
-        有效范围: 0 <= r <= min(X_high - X_low); 0 <= epsilon <= epsilon_max
-        """
+
         # area = np.array(area)
 
         lows = area.low  # [low1, low2]
@@ -186,32 +182,20 @@ class SCP_solver():
         epsilon_max = a * np.min(eta) ** n / np.prod(eta)
 
         if not (0 <= epsilon <= epsilon_max):
-            print(f"epsilon 范围 [0, {epsilon_max}]")
-            raise ValueError("epsilon 超出该公式的有效范围")
+
+            raise ValueError("epsilon error")
 
         return (epsilon * np.prod(eta) / a) ** (1 / n)
 
     def ScenarioSampling(self, sample_num, area):
-        '''
-        场景采样
-        :param SBC_model: NN_SBC
-        :param sample_num: 采样数
-        :param area: X
-        :return: 采样后的数组  [[--x1 NN(x1)--],[--x2 NN(x2)--],...]
-        '''
+
         # area = np.array(area)
 
         lows = area.low  # [low1, low2]
         uppers = area.up  # [upper1, upper2]
 
-        # 在 [0,1) 上采样，再映射到各自的区间
-        scenario = lows + (uppers - lows) * np.random.rand(sample_num, self.x_var_num)
 
-        #tensor_scenario = torch.from_numpy(scenario).float().to(device)
-        #tensor_out = SBC_model(tensor_scenario)
-        # 拼接
-        #combined = torch.cat([tensor_scenario, tensor_out], dim=1)
-        #out = combined.detach().cpu().numpy()
+        scenario = lows + (uppers - lows) * np.random.rand(sample_num, self.x_var_num)
 
         return scenario
 
@@ -236,7 +220,7 @@ class SCP_solver():
         return points[mask2]
 
 
-    # 待优化
+
     def g_5Matrix(self, points):
         hat_N = self.hat_N
         part1 = None
@@ -273,12 +257,12 @@ class SCP_solver():
             torch.from_numpy(x),
             perturbation
         )
-        # 4. 批量计算 B(f(x, w))
+        # 4.
         matrix, _ = self.SBC_model.substitute(x_next.numpy())
-        # 5. 计算每个状态点对应的 M 次采样均值
+        # 5.
         part1 = matrix.reshape(N, M, -1).mean(axis=1)
 
-        # 6. 计算 B(x)
+        # 6.
         part2, _ = self.SBC_model.substitute(points)
 
         return part1 - part2
@@ -288,7 +272,7 @@ class SCP_solver():
         N, n = points.shape
         M = self.hat_N
 
-        # 预先分配结果数组
+        #
         part1 = np.empty((N, len(self.SBC_model.parameters)))
         batch_size = 500
         if batch_size > N:
@@ -296,20 +280,20 @@ class SCP_solver():
 
         for start in range(0, N, batch_size):
             end = min(start + batch_size, N)
-            # 当前批次的状态点
+            #
             batch = points[start:end]
             K = batch.shape[0]
 
-            # 1. 重复当前批次的状态点
+            # 1.
             x = np.repeat(batch, M, axis=0)
 
 
-            # 1.5. 生成控制器输入
+            # 1.5.
             u = self.Col_model(
                 torch.as_tensor(x, dtype=torch.float32)
             ).detach()
 
-            # 2. 生成随机扰动
+            # 2.
             perturbation = self.distribution.RV_sample(
                 (K * M, self.random_var_num)
             )
@@ -319,36 +303,36 @@ class SCP_solver():
             #)
 
 
-            # 3. 批量计算下一时刻状态
+            # 3.
             x_next = self.dynamic.forward(
                 torch.from_numpy(x),
                 u,
                 perturbation
             )
 
-            # 4. 批量计算 B(f(x, w))
+            # 4.
             matrix, _ = self.SBC_model.substitute(
                 x_next.numpy()
             )
 
-            # 5. 每个状态点分别计算 M 次采样均值
+            # 5.
             temp = matrix.reshape(K, M, -1).mean(axis=1)
 
-            # 6. 保存当前批次结果
+            # 6.
             part1[start:end] = temp
 
-        # 7. 计算 B(x)
+        # 7.
         part2, _ = self.SBC_model.substitute(points)
 
         return part1 - part2
 
     def PAC_cvx_addLipCon_based_method1(self, matrix_g1, matrix_g2, matrix_g3, matrix_g5):
         '''
-        场景优化方法求解 SCP_N_hat_N
-        :param matrix_g1: 约束g1的仿射矩阵
-        :param matrix_g2: 约束g2的仿射矩阵
-        :param matrix_g3: 约束g3的仿射矩阵
-        :param matrix_g5: 约束g5的仿射矩阵
+
+        :param matrix_g1:
+        :param matrix_g2:
+        :param matrix_g3:
+        :param matrix_g5:
         :return:
         '''
 
@@ -357,23 +341,23 @@ class SCP_solver():
         rho = self.rho
         delta = self.delta
 
-        # ————————————————————————————定义变量————————————————————————————
+        # ————————————————————————————————————————————————————————
         Kappa = cp.Variable()
 
         var_lambda = cp.Variable()
 
         var_c = cp.Variable(nonneg=True)
 
-        # 多项式参数
+        #
         poly_param = self.SBC_model.parameters
-        # 多项式系数在CVX中的变量表示形式
+        #
         param = cp.Variable(len(poly_param))
         t_param = cp.Variable(len(poly_param), nonneg=True)
 
         I = np.eye(len(poly_param))
 
 
-        # ————————————————————————————添加约束————————————————————————————
+        # ————————————————————————————————————————————————————————
         constraints = [-matrix_g1 @ param <= Kappa,     # g1
                        matrix_g2 @ param <= 1 + Kappa,  # g2
                        -matrix_g3 @ param <= Kappa - var_lambda,   # g3
@@ -382,21 +366,21 @@ class SCP_solver():
                        var_lambda >= 1 + small_number,
                        I @ param <= t_param, I @ param >= -t_param]
 
-        # Lip约束
+        # Lip
         weights = self.SBC_model.compute_lip_weights_method1(self.Big_D_zones)
 
-        # 正则化系数
+        #
         miu = self.miu
         L = miu * weights @ t_param
         obj = cp.Minimize(Kappa + L)
 
         prob = cp.Problem(obj, constraints)
 
-        # ————————————————————————————求解————————————————————————————
+        # ————————————————————————————————————————————————————————
         # print(prob.constraints)
 
         print("============SO solving============")
-        # 凸性判断
+
         print("DCP: ", prob.is_dcp())
         prob.solve(solver=cp.MOSEK)
         print("status:", prob.status)
@@ -409,18 +393,18 @@ class SCP_solver():
         print("============SO end============")
 
         param_value = [param[i].value for i in range(len(poly_param))]
-        # 将系数值代入多项式
+        #
         self.SBC_model.RealExpression(param_value)
 
         return Kappa.value
 
     def PAC_cvx_addLipCon_based_method2(self, matrix_g1, matrix_g2, matrix_g3, matrix_g5):
         '''
-        场景优化方法求解 SCP_N_hat_N
-        :param matrix_g1: 约束g1的仿射矩阵
-        :param matrix_g2: 约束g2的仿射矩阵
-        :param matrix_g3: 约束g3的仿射矩阵
-        :param matrix_g5: 约束g5的仿射矩阵
+
+        :param matrix_g1:
+        :param matrix_g2:
+        :param matrix_g3:
+        :param matrix_g5:
         :return:
         '''
 
@@ -429,23 +413,23 @@ class SCP_solver():
         rho = self.rho
         delta = self.delta
 
-        # ————————————————————————————定义变量————————————————————————————
+        # ————————————————————————————————————————————————————————
         Kappa = cp.Variable()
 
         var_lambda = cp.Variable()
 
         var_c = cp.Variable(nonneg=True)
 
-        # 多项式参数
+        #
         poly_param = self.SBC_model.parameters
-        # 多项式系数在CVX中的变量表示形式
+        #
         param = cp.Variable(len(poly_param))
         t_param = cp.Variable(len(poly_param), nonneg=True)
 
         I = np.eye(len(poly_param))
 
 
-        # ————————————————————————————添加约束————————————————————————————
+        # ————————————————————————————————————————————————————————
         constraints = [-matrix_g1 @ param <= Kappa,     # g1
                        matrix_g2 @ param <= 1 + Kappa,  # g2
                        -matrix_g3 @ param <= Kappa - var_lambda,   # g3
@@ -454,10 +438,10 @@ class SCP_solver():
                        var_lambda >= 1 + small_number,
                        I @ param <= t_param, I @ param >= -t_param]
 
-        # Lip约束
+        # Lip
         weights = self.SBC_model.compute_lip_weights_method2(self.Big_D_zones)
 
-        # 正则化系数
+        #
         miu = self.miu
 
         L = miu * cp.norm(weights @ t_param, 2)
@@ -466,11 +450,11 @@ class SCP_solver():
 
         prob = cp.Problem(obj, constraints)
 
-        # ————————————————————————————求解————————————————————————————
+        # ————————————————————————————————————————————————————————
         # print(prob.constraints)
 
         print("============SO solving============")
-        # 凸性判断
+        #
         print("DCP: ", prob.is_dcp())
         prob.solve(solver=cp.MOSEK)
         print("status:", prob.status)
@@ -483,19 +467,19 @@ class SCP_solver():
         print("============SO end============")
 
         param_value = [param[i].value for i in range(len(poly_param))]
-        # 将系数值代入多项式
+        #
         self.SBC_model.RealExpression(param_value)
 
         return Kappa.value
 
-    #todo
+
     def PAC_cvx_addLipCon_based_method3(self, matrix_g1, matrix_g2, matrix_g3, matrix_g5):
         '''
-        场景优化方法求解 SCP_N_hat_N
-        :param matrix_g1: 约束g1的仿射矩阵
-        :param matrix_g2: 约束g2的仿射矩阵
-        :param matrix_g3: 约束g3的仿射矩阵
-        :param matrix_g5: 约束g5的仿射矩阵
+
+        :param matrix_g1:
+        :param matrix_g2:
+        :param matrix_g3:
+        :param matrix_g5:
         :return:
         '''
 
@@ -504,22 +488,22 @@ class SCP_solver():
         rho = self.rho
         delta = self.delta
 
-        # ————————————————————————————定义变量————————————————————————————
+        # ————————————————————————————————————————————————————————
         Kappa = cp.Variable()
 
         var_lambda = cp.Variable()
 
         var_c = cp.Variable(nonneg=True)
 
-        # 多项式参数
+
         poly_param = self.SBC_model.parameters
-        # 多项式系数在CVX中的变量表示形式
+
         param = cp.Variable(len(poly_param))
 
         L_max = cp.Variable(nonneg=True)
 
 
-        # ————————————————————————————添加约束————————————————————————————
+        # ————————————————————————————————————————————————————————
         constraints = [-matrix_g1 @ param <= Kappa,     # g1
                        matrix_g2 @ param <= 1 + Kappa,  # g2
                        -matrix_g3 @ param <= Kappa - var_lambda,   # g3
@@ -531,10 +515,10 @@ class SCP_solver():
         points = self.ScenarioSampling(len_points, self.Big_D_zones)
         points = self.filter_g1(points, self.X)
         len_points = points.shape[0]
-        # Lip约束
+        # Lip
         weights = self.SBC_model.compute_gradient_matrix(points)
 
-        # 正则化系数
+        #
         miu = self.miu
 
         for i in range(len_points):
@@ -548,11 +532,11 @@ class SCP_solver():
 
         prob = cp.Problem(obj, constraints)
 
-        # ————————————————————————————求解————————————————————————————
+        # ————————————————————————————————————————————————————————
         # print(prob.constraints)
 
         print("============SO solving============")
-        # 凸性判断
+        #
         print("DCP: ", prob.is_dcp())
         prob.solve(solver=cp.MOSEK)
         print("status:", prob.status)
@@ -565,7 +549,7 @@ class SCP_solver():
         print("============SO end============")
 
         param_value = [param[i].value for i in range(len(poly_param))]
-        # 将系数值代入多项式
+        #
         self.SBC_model.RealExpression(param_value)
 
         return Kappa.value
@@ -589,7 +573,7 @@ class SCP_solver():
             raise ValueError("hat_N must be at least 2")
 
         max_var = 0.05
-        # 每次考虑处理batch_size个点, 当采样点非常多时
+        #
         batch_size = 500
 
         if N <= batch_size:
@@ -600,36 +584,36 @@ class SCP_solver():
             batch = points[start:end]
             K = batch.shape[0]
 
-            # 1. 批量生成状态点
+            # 1.
             x = np.repeat(batch, M, axis=0)
 
-            # 1.5. 生成控制器输入
+            # 1.5.
             u = self.Col_model(
                 torch.as_tensor(x, dtype=torch.float32)
             ).detach()
 
 
-            # 2. 批量采样随机扰动
+            # 2.
             perturbation = self.distribution.RV_sample(
                 (K * M, m)
             )
 
-            # 3. 计算下一时刻状态
+            # 3.
             x_next = self.dynamic.forward(
                 torch.from_numpy(x),
                 u,
                 perturbation
             )
 
-            # 4. 批量计算多项式函数值
+            # 4.
             Y = np.asarray(
                 func_Bx(*x_next.numpy().T)
             ).reshape(K, M)
 
-            # 5. 每个状态点对应的样本方差
+            # 5.
             variances = np.var(Y, axis=1, ddof=1)
 
-            # 6. 更新最大值
+            # 6.
             max_var = max(max_var, np.max(variances))
 
         return max_var
@@ -640,25 +624,25 @@ class SCP_solver():
         expr = self.SBC_model.RealExpr
         x_var = self.SBC_model.var_sym
 
-        # 2. 计算梯度
+        # 2.
         grad_expr = [sp.diff(expr, xi) for xi in x_var]
 
-        # 3. 转换为 NumPy 函数
+        # 3.
         grad_funcs = [
             sp.lambdify(x_var, g, 'numpy')
             for g in grad_expr
         ]
 
-        # 4. 批量计算梯度
+        # 4.
         grad_values = np.column_stack([
             np.broadcast_to(f(*points.T), (N,))
             for f in grad_funcs
         ])
 
-        # 5. 计算每个采样点的梯度二范数
+        # 5.
         grad_norms = np.linalg.norm(grad_values, ord=2, axis=1)
 
-        # 6. 返回最大梯度范数
+        # 6.
         return np.max(grad_norms)
 
     def calcLip2(self, area):
@@ -670,22 +654,22 @@ class SCP_solver():
         lows = area.low  # [low1, low2]
         uppers = area.up  # [upper1, upper2]
 
-        # 在 [0,1) 上采样，再映射到各自的区间
+        #
         X = lows + (uppers - lows) * np.random.rand(N, self.x_var_num)
         Y = lows + (uppers - lows) * np.random.rand(N, self.x_var_num)
 
-        # SymPy 转 NumPy 函数
+        #
         f = sp.lambdify(x_var, expr, 'numpy')
 
-        # 计算函数值
+        #
         fx = np.broadcast_to(f(*X.T), (N,))
         fy = np.broadcast_to(f(*Y.T), (N,))
 
-        # 计算差商
+        #
         numerator = np.abs(fx - fy)
         denominator = np.linalg.norm(X - Y, axis=1)
 
-        # 11. 计算差商
+        # 11.
         valid = denominator > 1e-12
         ratios = np.abs(numerator[valid]) / denominator[valid]
 
@@ -701,30 +685,30 @@ class SCP_solver():
         lows = area.low  # [low1, low2]
         uppers = area.up  # [upper1, upper2]
 
-        # 1. 在状态空间中随机采样
+        # 1.
         X = lows + (uppers - lows) * np.random.rand(N, self.x_var_num)
         Y = lows + (uppers - lows) * np.random.rand(N, self.x_var_num)
 
-        # 2. 构造 B(b,x)
+        # 2.
         expr = self.SBC_model.RealExpr
         x_var = self.SBC_model.var_sym
         f = sp.lambdify(x_var, expr, 'numpy')
 
-        # 3. 计算 B(X) 和 B(Y)
+        # 3.
         BX = np.asarray(f(*X.T)).reshape(-1)
         BY = np.asarray(f(*Y.T)).reshape(-1)
 
-        # 4. 生成 M 个随机扰动
-        # X 和 Y 使用相同的随机扰动
+        # 4.
+        #
         W = self.distribution.RV_sample(
             (M, self.random_var_num)
         )
 
-        # 5. 重复状态点
+        # 5.
         X_repeat = np.repeat(X, M, axis=0)
         Y_repeat = np.repeat(Y, M, axis=0)
 
-        # 1.5. 生成控制器输入
+        # 1.5.
         u_x = self.Col_model(
             torch.as_tensor(X_repeat, dtype=torch.float32)
         ).detach()
@@ -735,13 +719,13 @@ class SCP_solver():
 
 
 
-        # 6. 重复随机扰动
+        # 6.
         if isinstance(W, torch.Tensor):
             W = W.detach().cpu().numpy()
 
         W_repeat = np.tile(W, (N, 1))
 
-        # 7. 计算下一时刻状态
+        # 7.
         X_next = self.dynamic.forward(
             torch.from_numpy(X_repeat),
             u_x,
@@ -754,7 +738,7 @@ class SCP_solver():
             torch.from_numpy(W_repeat)
         )
 
-        # 8. 计算 B(f(X,w)) 和 B(f(Y,w))
+        # 8.
         B_X_next = np.asarray(
             f(*X_next.detach().cpu().numpy().T)
         ).reshape(N, M)
@@ -763,37 +747,31 @@ class SCP_solver():
             f(*Y_next.detach().cpu().numpy().T)
         ).reshape(N, M)
 
-        # 9. 计算 g5(X) - g5(Y)
+        # 9.
         diff = (
                 (B_X_next - B_Y_next).mean(axis=1)
                 - (BX - BY)
         )
 
-        # 10. 计算状态点之间的距离
+        # 10.
         distances = np.linalg.norm(X - Y, axis=1)
 
-        # 11. 计算差商
+        # 11.
         valid = distances > 1e-12
         ratios = np.abs(diff[valid]) / distances[valid]
 
-        # 12. 返回最大差商
+        # 12.
         return np.max(ratios)
 
 
     def G(self, radius, n, R):
-        """
-        n维超球体均匀分布的小球概率下界。
 
-        radius: 邻域小球半径
-        n:      状态空间维度
-        R:      状态空间超球体半径
-        """
         if n < 1 or int(n) != n:
-            raise ValueError("n 必须是正整数")
+            raise ValueError("n error")
         if R <= 0:
-            raise ValueError("R 必须大于 0")
+            raise ValueError("R error")
         if radius < 0:
-            raise ValueError("radius 不能为负")
+            raise ValueError("radius error")
 
         if radius == 0:
             return 0.0
@@ -812,7 +790,7 @@ class SCP_solver():
         I1 = betainc(a, b, z1)
         I2 = betainc(a, b, z2)
 
-        # 当 c1 < 0 时，需要使用大球冠的补充表达式
+
         H1 = I1 if c1 >= 0 else 2 - I1
 
         return float(
@@ -820,18 +798,9 @@ class SCP_solver():
         )
 
     def G_inverse(self, epsilon, n, R):
-        """
-        计算 G^(-1)(epsilon)。
 
-        epsilon: 概率参数，范围 [0, 1]
-        n:       状态空间维度
-        R:       状态空间超球体半径
-
-        返回:
-            邻域小球半径
-        """
         if not 0 <= epsilon <= 1:
-            raise ValueError("epsilon 必须在 [0, 1] 内")
+            raise ValueError("epsilon in [0, 1]")
 
         if epsilon == 0:
             return 0.0
@@ -861,9 +830,5 @@ if __name__ == '__main__':
     a = np.pi ** (n / 2) / (2 ** n * gamma(n / 2 + 1))
 
     epsilon_max = a * np.min(eta) ** n / np.prod(eta)
-
-    if not (0 <= epsilon <= epsilon_max):
-        print(f"epsilon 范围 [0, {epsilon_max}]")
-        raise ValueError("epsilon 超出该公式的有效范围")
 
     print((epsilon * np.prod(eta) / a) ** (1 / n))

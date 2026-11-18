@@ -6,8 +6,7 @@ from RL.share import *
 
 
 class Actor(nn.Module):
-    # 自己有修改
-    # Actor 目前的输出范围是 0到正无穷
+
     def __init__(self, state_dim, hidden_dim, action_dim, action_bound):
         super().__init__()
         self.fc1 = nn.Linear(state_dim, hidden_dim)
@@ -55,10 +54,10 @@ class DDPG:
 
     def take_action(self, state):
         state = torch.tensor(np.array([state]), dtype=torch.float).to(self.device)
-        # 自己有修改
+
         #action = self.actor(state).item()
         action = self.actor(state)
-        # 自己修改
+
         #action = action + self.sigma * np.random.randn(self.action_dim)
         action = action + torch.tensor(self.sigma * np.random.randn(self.action_dim))
         return action
@@ -71,7 +70,7 @@ class DDPG:
         states = torch.tensor(transition_dict['states'], dtype=torch.float).to(self.device)
         #actions = torch.tensor(np.array(transition_dict['actions']),
         #                       dtype=torch.float).view(-1, 1).to(self.device)
-        #todo 自己修改
+
         actions = torch.tensor(np.array(transition_dict['actions']),
                                dtype=torch.float).to(self.device)
         rewards = torch.tensor(transition_dict['rewards'],

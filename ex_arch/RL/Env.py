@@ -50,15 +50,15 @@ class Env:
         # self.G_zones = example.G_zones
         self.U_zones = example.U_zones
 
-        # action的边界
+
         self.u = example.u
 
-        # 动力系统
+
         self.f = example.fxHelper
         self.fx_func = example.fx_func
         self.distribution = example.distribution
 
-        #todo====
+
         self.dense = example.dense
         self.units = example.units
         #=========
@@ -81,7 +81,7 @@ class Env:
         self.barrier = barrier
 
 
-    # 采样起点
+
     def reset(self):
         if self.I_zones.shape == 'ball':
             state = np.random.randn(self.n_obs)
@@ -95,11 +95,11 @@ class Env:
         self.episode = 0
         return state, 'Reset successfully!'
 
-    # 系统状态点的迁移
+
     def step(self, action):
         self.episode += 1
 
-        # 动力系统计算 x_next, 自己修改
+
         #ds = np.array([F(self.s, action) for F in self.f])
         #self.s = self.s + ds * self.dt
         perturbation = self.distribution.RV_sample(self.random_var_num)
@@ -123,7 +123,7 @@ class Env:
         return reward
 
 
-    # 我们只考虑安全问题
+
     def avoid_reward(self):
         if self.reward_gaussian:
             if self.U_zones.shape == 'box':
@@ -143,7 +143,7 @@ class Env:
         return reward_avoid
 
 
-    # 加入了障碍证书的奖励
+
     def get_feedback_reward(self):
         if self.barrier is None:
             return 0

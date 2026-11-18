@@ -17,7 +17,7 @@ from collections import deque
 
 def fit(env, agent):
     x, y = [], []
-    # todo
+
     N = 10
     for i in range(N):
         state, info = env.reset()
@@ -42,7 +42,7 @@ def fit(env, agent):
             if done:
                 print('The {}th unsafe trajectory'.format(i))
                 break
-    print(f"sample num：{len(x)}")
+    print(f"sample num:{len(x)}")
     P = PolynomialFeatures(2, include_bias=False)
     X = P.fit_transform(x)
     model = Ridge(alpha=0.00, fit_intercept=False)
@@ -70,14 +70,14 @@ def fit(env, agent):
 def ddpg_init(example):
     # example = get_example_by_name(example_name)
 
-    # Actor 网络学习率
+    # Actor
     actor_lr = 3e-4
-    # Critic 网络学习率
+    # Critic
     critic_lr = 3e-3
-    # todo
+
     hidden_dim = 64
 
-    # 奖励因子
+
     gamma = 0.98
 
     tau = 0.005
@@ -91,10 +91,10 @@ def ddpg_init(example):
     env = Env(example)
 
 
-    # 影响奖励的类型是否使用高斯型
+
     env.reward_gaussian = False
 
-    # 表示不允许状态超出全域
+
     env.beyond_domain = False
 
     replay_buffer = ReplayBuffer(buffer_size)
@@ -122,19 +122,19 @@ def train_by_ddpg(agent, env, replay_buffer):
         episode_return = 0
         state_list = []
 
-        # 采样起点
+
         state, info = env.reset()
 
         done, truncated = False, False
         while not done and not truncated:
             state_list.append(state)
 
-            # 根据actor获取action
+
             action = agent.take_action(state)
             action = action.detach().reshape(-1)
             # action = action.detach().numpy()
 
-            #todo 修改完了
+
             next_state, reward, done, truncated, info = env.step(action)
 
             replay_buffer.add(state, action, reward, next_state, done)
@@ -155,7 +155,7 @@ def train_by_ddpg(agent, env, replay_buffer):
             plot(env, x, y)
     end_time = timeit.default_timer()
 
-    #todo 修改fit  获得控制器
+
     # controller = fit(env, agent)
     controller = agent.actor
     return controller, end_time - start_time

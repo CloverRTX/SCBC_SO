@@ -15,7 +15,7 @@ def load(model, config, model_type, state):
     model.load_state_dict(torch.load(path))
 
 
-# 多项式
+
 def sympy_save(model, config, model_type, state):
     folder = os.path.dirname(config["save_load"]["poly_save_path"])
     os.makedirs(folder, exist_ok=True)
