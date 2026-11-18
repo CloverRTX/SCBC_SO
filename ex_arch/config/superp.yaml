@@ -1,0 +1,176 @@
+# !need fix! : 针对不同的动力系统是需要修改的方法
+
+device: cpu
+
+# ---------------离散时间随机动力系统--------------- #
+
+# 假设我们并不知道f_x的具体信息
+# 但是为了获取状态的运动情况，需要这个f_x来做运算
+dynamics:
+  # 系统名
+  systemName: system_arch
+  # 状态转移方程 x_next = x + alpha * f_x
+  f_x:
+    - x1 - x1 ** 3 + v1 * x2 - x1 * x2 ** 2 + u1
+    - -x1 + v1 * x2 - x1 ** 2 * x2 - x2 ** 3 + u2
+
+  x_var_str: x1, x2
+  col_var_str: u1, u2
+  random_var_str: v1
+
+  x_var_num: 2
+  col_var_num: 2
+  random_var_num: 1
+
+  var_num: 5
+  # dt
+  alpha: 0.001
+  goal: avoid
+  max_episode: 1000
+  #u: 控制器边界
+
+  col_bound: 0.005
+
+  #dense
+  #units
+
+
+  # 定义域
+  # X: [ [ -np.pi, np.pi ], [ -5, 5 ] ]
+  # X0: 0 <= ||x||2 <= 2
+  # Xu: 2.5 <= ||x||2 <= 3
+
+# ----------------------------------- #
+
+
+
+# ---------------训练集采样设置--------------- #
+sample_config:
+  path_X: Dataset/trainingData_X.csv
+  path_X0: Dataset/trainingData_X0.csv
+  path_Xu: Dataset/trainingData_Xu.csv
+  path_Xs: Dataset/trainingData_Xs.csv
+
+  # batch 设置
+  X0_batch_size: 64
+  Xs_batch_size: 64
+  Xu_batch_size: 64
+  X_batch_size: 64
+
+  # 采样长度 (每个维度)
+  X0_sample_len: 16
+  Xs_sample_len: 32
+  Xu_sample_len: 32
+  X_sample_len: 32
+
+  # 随机变量采样个数
+  RV_sample_nums: 500
+# ------------------------------------ #
+
+
+
+# ---------------SBC设置--------------- #
+Bx_model:
+  #障碍证书模型
+  type: poly
+  input_dim: 2
+  output_dim: 1
+
+  #P(x)的次数
+  deg: 6
+
+  # SBC参数
+  lambda: -1
+
+  mathcal_H: 3
+
+  rho: 0.1
+# ----------------------------------------- #
+
+
+# ---------------learner设置--------------- #
+training:
+  # 与small_eps相等
+  #eps: 0.001
+  # ?
+  # 最大epochs个数 400次epoch 预训练次数
+  # epochs: 50
+  # kappa大小
+  # kappa: 0.5
+# ------------------------------------ #
+
+
+# -------------------SCP_N设置------------------- #
+SCP_N:
+  G_r: -1
+
+  beta: 0.005
+
+  #0.0174
+  #0.0000174
+  #0.00000871
+  epsilon: 0.0174
+
+  N: -1
+
+  #PAC level
+  # epsilon >= 2 / N * ( ln(1/beta) + d )
+
+# ---------------SCP_N_hat_N设置--------------- #
+SCP_N_hat_N:
+  # 场景采样数
+  hat_N: 500
+
+  # 求解
+  beta_s: -1
+
+  # 需要逼近
+  hat_M: -1
+
+  # 优化问题的决策变量个数 (-1 意味着未使用)
+  d: -1
+
+  # 数学期望与样本均值的容差
+  delta: 0.05
+
+  #
+  miu: 0.008
+
+  # 定义域
+  #X: [ [ -2, 2 ], [ -2, 2 ] ]
+  #X0: [ [ -0.2, 0.2 ], [ 0.3, 0.7 ] ]
+  #Xu: [ [ -2, -1 ], [ -2, -1 ] ]
+# ------------------------------------ #
+
+
+
+
+
+
+
+
+
+# --------------保存和读取-------------- #
+save_load:
+  #NN
+  save_path: results/{model_type}.{state}.pth
+  load_path: results/{model_type}.{state}.pth
+
+  #poly
+  poly_save_path: results/{model_type}.{state}.txt
+  poly_load_path: results/{model_type}.{state}.txt
+
+# ------------------------------------ #
+
+
+
+# ---------------Cell分区-------------- #
+partitioning:
+  #分区 Cell划分
+  method: grid
+  # 初始的划分规则
+  initial_num_slices:
+  - 4
+  - 4
+  RV_num_slices: 10
+# ------------------------------------- #

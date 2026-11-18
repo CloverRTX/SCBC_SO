@@ -1,0 +1,11 @@
+import yaml
+
+
+def read_yaml(file_path):
+    with open(file_path, 'r', encoding='utf-8') as f:
+        return yaml.safe_load(f)
+
+
+if __name__ == "__main__":
+    file = read_yaml('../config/superp.yaml')
+    print(file)
